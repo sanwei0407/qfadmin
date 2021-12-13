@@ -12,8 +12,7 @@ export default defineConfig({
     hmr: true,
   },
   layout: {
-    // https://umijs.org/zh-CN/plugins/plugin-layout
-    locale: false,
+    locale: false, // 在一个简单项目的时候可以开始关闭 locale 多语言支持的配置
     siderWidth: 208,
     ...defaultSettings,
   },
@@ -35,7 +34,8 @@ export default defineConfig({
   routes,
   // Theme for antd: https://ant.design/docs/react/customize-theme-cn
   theme: {
-    'root-entry-name': 'variable',
+    'primary-color': defaultSettings.primaryColor,
+    'root-entry-name': 'default',
   },
   // esbuild is father build tools
   // https://umijs.org/plugins/plugin-esbuild

@@ -1,9 +1,9 @@
-import React, { useState, useRef ,useEffect} from 'react';
+import React, { useState, useRef } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import ProTable from '@ant-design/pro-table';
 import { Button, message, Popconfirm } from 'antd';
 
-import ProForm, { ModalForm, ProFormText ,ProFormSelect,ProFormTimePicker} from '@ant-design/pro-form';
+import ProForm, { ModalForm, ProFormText } from '@ant-design/pro-form';
 
 import $api from '@/api';
 
@@ -11,11 +11,7 @@ function Station() {
   const [showAddBox, setShowAddBox] = useState(false); // 添加弹窗是否显示
   const [editBox, setEditBox] = useState(false); // 编辑弹窗的提示
   const [editId, setEditId] = useState(null); // 当前的修改id
-  const [sts , setSts] = useState({}) // 起点站点的枚举
-  const [ets , setEts] = useState({}) // 到达站点的枚举
 
-  const [scity,setScity] = useState('') // 起点城市
-  const [ecity,setEcity] = useState('') // 到达城市
   const tableRef = useRef(); // 创建一个转发  关联protable组件实例
   const editFormRef = useRef(); // 创建一个编辑表单的转发
   const addFormRef = useRef(); // 创建一个新建表单的转发
@@ -62,14 +58,11 @@ function Station() {
         return (
           <>
             <Button
-              onClick={ async () => {
+              onClick={() => {
                 setEditId(record._id); // 设置一个当前的修改 记录的id
-                await getStations(record.startCity,'s')
-                await getStations(record.arriveCity,'e')
-               
-               editFormRef.current.setFieldsValue({
+                editFormRef.current.setFieldsValue({
                   ...record,
-                  ticketPrice: record.ticketPrice /100
+                  stationGps: record.stationGps.join(),
                 }); // 设置弹出的编辑表单的 表单默认值
                 setEditBox(true);
               }}
@@ -118,8 +111,7 @@ function Station() {
 
   // 执行删除
   const handleDelete = async (id) => {
-    // 删除航线
-    const _res = await $api.post('/flight/del', { id });
+    const _res = await $api.post('/station/del', { id });
     const { success } = _res.data;
     if (!success) message.error('删除败');
     if (success) {
@@ -127,35 +119,6 @@ function Station() {
       message.success('删除成功');
     }
   };
-
-  useEffect(()=>{
-    if(scity)   getStations(scity,'s')
-  },[scity])
-
-  useEffect(()=>{
-    if(ecity)   getStations(ecity,'e')
-  },[ecity])
-
-
-  // 根据城市名称获取它对应的站点
-  const getStations = async (cityName,type)=>{
-    console.log('name',name)
-    let res = await $api.post('/station/getAll',{cityName})
-    const { data } = res.data;
-    const _temobj = {}
-    
-    data.forEach(element => {
-          _temobj[element.stationName] = element.stationName
-    });
-
-    // 设置起点站点可选的内容
-    if(type=='s'){
-            setSts(_temobj)
-    }
-    if(type=='e'){
-           setEts(_temobj)
-    }
-  }
 
   return (
     <PageContainer>
@@ -177,13 +140,11 @@ function Station() {
         visible={showAddBox}
         onVisibleChange={setShowAddBox}
         onFinish={async (data) => {
-
-    
           // onFinish 函数就会得到用户填写的表单的内容 执行添加请求
 
-          let _res = await $api.post('/flight/add', {
+          let _res = await $api.post('/station/add', {
             ...data,
-            ticketPrice: data.ticketPrice*100 // 价格精确到分
+            stationGps: data.stationGps.split(','),
           });
           const { success } = _res.data;
 
@@ -199,38 +160,24 @@ function Station() {
         <ProForm.Group>
           <ProFormText
             width="md"
-            name="flightNum"
-            label="航班编号"
+            name="stationName"
+            label="站点名称"
             tooltip="最长为 10 位"
             placeholder="请输入名称"
           />
-              <ProFormText   width="md"  name="preDay"  label="预售天数" placeholder="预售天数" />
-        </ProForm.Group>
 
-       <ProForm.Group>
-          <ProFormText   width="md"  name="ticketPrice"  label="票价" placeholder="价格" />
-          <ProFormText   width="md"  name="maxNum"  label="最大可售票数" placeholder="最大可售票数" />
+          <ProFormText width="md" name="stationAdd" label="站点地址" placeholder="请输入站点地址" />
         </ProForm.Group>
-
         <ProForm.Group>
-          <ProFormTimePicker   width="md"  name="startTime"  label="发车时间" placeholder="出发时间" />
-        
+          <ProFormText
+            width="md"
+            name="cityName"
+            label="城市"
+            placeholder="请输入站点所在的城市名称"
+          />
+
+          <ProFormText width="md" name="stationGps" label="坐标" placeholder="gps坐标" />
         </ProForm.Group>
-
-
-        <ProForm.Group>
-          <ProFormText   width="md"  name="startCity"  label="出发城市" placeholder="请填写出发城市"  onChange={ev=>  setScity(ev.target.value)   }/>
-          <ProFormText   width="md"  name="arriveCity"  label="到达城市" placeholder="请填写到达城市"  onChange={ev=>  setEcity(ev.target.value)   } />
-        </ProForm.Group>
-
-        <ProForm.Group>
-           <ProFormSelect fieldProps={{mode:'tags'}}   label="出发站点" name="startStations" valueEnum={ sts  } /> 
-          <ProFormSelect  fieldProps={{mode:'tags'}}   label="到达站点" name="arriveStations" valueEnum={ ets  } /> 
-          
-        </ProForm.Group>
-        
-
-      
       </ModalForm>
 
       {/* 修改 操作 */}
@@ -241,10 +188,10 @@ function Station() {
         onFinish={async (data) => {
           // onFinish 函数就会得到用户填写的表单的内容 执行添加请求
 
-          let _res = await $api.post('/flight/edit', {
+          let _res = await $api.post('/station/edit', {
             ...data,
-            id: editId,
-             ticketPrice: data.ticketPrice*100 // 价格精确到分
+            stationGps: data.stationGps.split(','),
+            stationId: editId,
           });
           const { success } = _res.data;
 
@@ -257,41 +204,27 @@ function Station() {
           return success;
         }}
       >
-
         <ProForm.Group>
           <ProFormText
             width="md"
-            name="flightNum"
-            label="航班编号"
+            name="stationName"
+            label="站点名称"
             tooltip="最长为 10 位"
             placeholder="请输入名称"
           />
-              <ProFormText   width="md"  name="preDay"  label="预售天数" placeholder="预售天数" />
+
+          <ProFormText width="md" name="stationAdd" label="站点地址" placeholder="请输入站点地址" />
         </ProForm.Group>
-
-
         <ProForm.Group>
-          <ProFormTimePicker   width="md"  name="startTime"  label="发车时间" placeholder="出发时间" />
-        
-        </ProForm.Group>
+          <ProFormText
+            width="md"
+            name="cityName"
+            label="城市"
+            placeholder="请输入站点所在的城市名称"
+          />
 
-        <ProForm.Group>
-          <ProFormText   width="md"  name="startCity"  label="出发城市" placeholder="请填写出发城市"  onChange={ev=>  setScity(ev.target.value)   }/>
-          <ProFormText   width="md"  name="arriveCity"  label="到达城市" placeholder="请填写到达城市"  onChange={ev=>  setEcity(ev.target.value)   } />
+          <ProFormText width="md" name="stationGps" label="坐标" placeholder="gps坐标" />
         </ProForm.Group>
-
-       <ProForm.Group>
-          <ProFormText   width="md"  name="ticketPrice"  label="票价" placeholder="价格" />
-          <ProFormText   width="md"  name="maxNum"  label="最大可售票数" placeholder="最大可售票数" />
-        </ProForm.Group>
-
-        <ProForm.Group>
-           <ProFormSelect fieldProps={{mode:'tags'}}   label="出发站点" name="startStations" valueEnum={ sts  } /> 
-          <ProFormSelect  fieldProps={{mode:'tags'}}   label="到达站点" name="arriveStations" valueEnum={ ets  } /> 
-          
-        </ProForm.Group>
-        
-        
       </ModalForm>
     </PageContainer>
   );
