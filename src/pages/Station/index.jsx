@@ -138,6 +138,7 @@ function Station() {
         onFinish={async (data) => {
           // onFinish 函数就会得到用户填写的表单的内容 执行添加请求
 
+          cosnole.log('data', data);
           let _res = await $api.post('/station/add', {
             ...data,
             stationGps: data.stationGps.split(','),
